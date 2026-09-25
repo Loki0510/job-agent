@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Header, HTTPException
 from app.core.config import settings
 from app.core.profile import PROFILE
-from app.services.discovery import discover_configured, records, stats
+from app.services.discovery import discover_configured, records, eligible_records, stats
 from app.services.application_log import add as add_application, entries as application_entries
 
 async def _poller():
@@ -57,6 +57,11 @@ async def discover_now():
 @app.get("/jobs")
 async def jobs():
     data=records()
+    return {"count":len(data),"jobs":data}
+
+@app.get("/queue")
+async def application_queue():
+    data=eligible_records()
     return {"count":len(data),"jobs":data}
 
 @app.get("/stats")
