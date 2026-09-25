@@ -203,10 +203,13 @@ async def inspect_and_fill(job, dry_run=True):
                             unknown.append(context or "required select")
                         continue
                     value=await el.input_value()
-                    if not value and answer is not None:
-                        await el.fill(str(answer))
-                    elif not value:
-                        unknown.append(context or "required field")
+                    if not value:
+                        filled=await _fill_text(el,context)
+                        if not filled and answer is not None:
+                            await el.fill(str(answer))
+                            filled=True
+                        if not filled:
+                            unknown.append(context or "required field")
                 except Exception:
                     continue
 
