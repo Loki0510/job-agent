@@ -5,49 +5,19 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Job Agent Dashboard</title>
 <style>
-:root{
-  --bg:#0b1020;--panel:#121a2f;--panel2:#18223d;--text:#f6f8ff;--muted:#9da9c6;
-  --line:#24304f;--accent:#7c9cff;--good:#44d7a8;--warn:#ffca70;--bad:#ff7a8a;--violet:#b69cff
-}
-*{box-sizing:border-box}
-body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:
-radial-gradient(circle at 15% 0%,#1b2a55 0,transparent 34%),
-radial-gradient(circle at 100% 0%,#2d1d52 0,transparent 28%),var(--bg);color:var(--text);min-height:100vh}
-.shell{max-width:1180px;margin:0 auto;padding:34px 20px 60px}
-.header{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:26px}
-h1{font-size:34px;line-height:1.05;margin:0 0 8px;letter-spacing:-.8px}
-.subtitle{color:var(--muted);margin:0}
-.badge{padding:9px 13px;border:1px solid var(--line);border-radius:999px;background:rgba(18,26,47,.82);font-size:13px}
-.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:20px 0}
-.card{background:linear-gradient(180deg,rgba(24,34,61,.94),rgba(18,26,47,.94));border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 18px 40px rgba(0,0,0,.18)}
-.metric .n{font-size:30px;font-weight:800;margin-top:5px}.metric .label{color:var(--muted);font-size:13px}
-.good .n{color:var(--good)}.warn .n{color:var(--warn)}.bad .n{color:var(--bad)}.ready .n{color:var(--accent)}.violet .n{color:var(--violet)}
-.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:18px 0}
-input{flex:1;min-width:240px;border:1px solid var(--line);background:#0f1730;color:var(--text);padding:12px 14px;border-radius:12px;outline:none}
-button{border:1px solid var(--line);background:#17213c;color:var(--text);padding:11px 14px;border-radius:12px;cursor:pointer}
-button.active{background:#26375f;border-color:#4962a2}
-.tabs{display:flex;gap:8px;flex-wrap:wrap}
-.list{display:grid;gap:12px;margin-top:16px}
-.job{padding:17px 18px;border-radius:16px;border:1px solid var(--line);background:rgba(18,26,47,.78)}
-.jobtop{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
-.title{font-weight:750;font-size:16px}.company{color:var(--muted);margin-top:4px}
-.meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.pill{font-size:12px;padding:6px 9px;border-radius:999px;background:#101936;border:1px solid var(--line);color:#c6d0eb}
-.reason{color:#c9d2e8;margin-top:12px;font-size:13px;line-height:1.45}
-a{color:#a9baff;text-decoration:none}a:hover{text-decoration:underline}
-.empty{padding:40px;text-align:center;color:var(--muted)}
-.footer{color:var(--muted);font-size:12px;margin-top:20px}
-@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.header{flex-direction:column}}
-@media(max-width:520px){.grid{grid-template-columns:1fr 1fr}.shell{padding:22px 14px}.jobtop{flex-direction:column}}
+:root{--bg:#090e1b;--panel:#111a2d;--panel2:#17233c;--text:#f7f9ff;--muted:#9da9c6;--line:#263451;--accent:#7ea1ff;--good:#45d8a6;--warn:#ffc86a;--bad:#ff7b8e;--violet:#b89fff}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:radial-gradient(circle at 10% 0%,#1a2b59 0,transparent 34%),radial-gradient(circle at 100% 0%,#311f57 0,transparent 30%),var(--bg);color:var(--text);min-height:100vh}
+.shell{max-width:1200px;margin:0 auto;padding:34px 20px 70px}.header{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:24px}h1{font-size:36px;margin:0 0 7px;letter-spacing:-1px}.subtitle{color:var(--muted);margin:0}.badge{padding:9px 13px;border:1px solid var(--line);border-radius:999px;background:#111a2dcc;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:20px 0}.card{background:linear-gradient(180deg,#18233ded,#111a2fed);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 18px 45px #0003}.metric .n{font-size:30px;font-weight:800;margin-top:4px}.metric .label{font-size:13px;color:var(--muted)}.good .n{color:var(--good)}.warn .n{color:var(--warn)}.bad .n{color:var(--bad)}.ready .n{color:var(--accent)}.violet .n{color:var(--violet)}
+.section{margin-top:18px}.sectionhead{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:12px}.sectionhead h2{margin:0;font-size:20px}.sectionhead p{margin:4px 0 0;color:var(--muted);font-size:13px}.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+input,select{border:1px solid var(--line);background:#0e1730;color:var(--text);padding:12px 13px;border-radius:11px;outline:none}input{flex:1;min-width:220px}button{border:1px solid var(--line);background:#17233d;color:var(--text);padding:11px 14px;border-radius:11px;cursor:pointer}button:hover{background:#213154}button.active{background:#2a3c66;border-color:#536eb0}.tabs{display:flex;gap:8px;flex-wrap:wrap}.list{display:grid;gap:11px;margin-top:15px}.job,.question{padding:16px 17px;border-radius:15px;border:1px solid var(--line);background:#111a2fbd}.jobtop,.qtop{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.title{font-weight:760}.company{color:var(--muted);margin-top:4px}.meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.pill{font-size:12px;padding:6px 9px;border-radius:999px;background:#0d1730;border:1px solid var(--line);color:#cad4ed}.pill.sensitive{color:#ffd3d8;border-color:#6b3441}.pill.legal{color:#ffe3ae;border-color:#6c5730}.reason{color:#cbd4e8;font-size:13px;line-height:1.45;margin-top:11px}.unknown{margin-top:9px;color:#ffb9c2;font-size:12px}.answerrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}.answerrow input{min-width:260px}.saveState{font-size:12px;color:var(--good);margin-top:7px}.tip{padding:13px 15px;border-radius:13px;background:#101a31;border:1px solid #2b3b60;color:#bdc8e2;font-size:13px;line-height:1.5;margin-bottom:14px}a{color:#a9baff;text-decoration:none}a:hover{text-decoration:underline}.empty{text-align:center;color:var(--muted);padding:32px}.footer{color:var(--muted);font-size:12px;margin-top:18px}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.header{flex-direction:column}}@media(max-width:520px){.shell{padding:22px 13px}.grid{grid-template-columns:1fr 1fr}.jobtop,.qtop{flex-direction:column}}
 </style>
 </head>
 <body>
 <div class="shell">
   <div class="header">
-    <div>
-      <h1>Job Agent</h1>
-      <p class="subtitle">Autonomous U.S. job discovery and application tracking</p>
-    </div>
+    <div><h1>Job Agent</h1><p class="subtitle">Autonomous U.S. job discovery, applications, and learned answers</p></div>
     <div id="status" class="badge">Checking worker…</div>
   </div>
 
@@ -59,14 +29,23 @@ a{color:#a9baff;text-decoration:none}a:hover{text-decoration:underline}
     <div class="card metric violet"><div class="label">Unconfirmed</div><div class="n" id="unconfirmedN">0</div></div>
   </div>
 
-  <div class="card">
-    <div class="toolbar">
-      <input id="search" placeholder="Search company, title, location…">
+  <div class="card section">
+    <div class="sectionhead">
+      <div><h2>Applications</h2><p>Confirmed submissions, manual actions, and blocked forms.</p></div>
       <button id="refresh">Refresh</button>
     </div>
+    <div class="toolbar"><input id="search" placeholder="Search company, title, location…"></div>
     <div class="tabs" id="tabs"></div>
     <div class="list" id="list"></div>
     <div class="footer" id="updated"></div>
+  </div>
+
+  <div class="card section">
+    <div class="sectionhead">
+      <div><h2>Teach Once, Reuse Automatically</h2><p id="questionSummary">Loading blocked questions…</p></div>
+    </div>
+    <div class="tip">Answer a blocked question once and it is stored privately on Railway. The worker will retry eligible blocked jobs and reuse that answer for the same employer/question later. For multiple choices, separate answers with <strong>|</strong>. Sensitive demographic and legal/consent questions are never guessed.</div>
+    <div class="list" id="questions"></div>
   </div>
 </div>
 
@@ -74,7 +53,7 @@ a{color:#a9baff;text-decoration:none}a:hover{text-decoration:underline}
 const token=new URLSearchParams(location.search).get('token')||'';
 const groups=['applied','manual_required','blocked','ready','unconfirmed'];
 const labels={applied:'Applied',manual_required:'Manual Required',blocked:'Blocked',ready:'Ready',unconfirmed:'Unconfirmed'};
-let data={},active='applied';
+let data={},questionData={},active='applied';
 
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function renderTabs(){
@@ -84,7 +63,7 @@ function renderTabs(){
 }
 function renderList(){
   const q=document.getElementById('search').value.toLowerCase().trim();
-  const rows=(data[active]||[]).filter(x=>[x.title,x.company,x.location,x.reason].join(' ').toLowerCase().includes(q));
+  const rows=(data[active]||[]).filter(x=>[x.title,x.company,x.location,x.reason,(x.unknown_required||[]).join(' ')].join(' ').toLowerCase().includes(q));
   const el=document.getElementById('list');
   if(!rows.length){el.innerHTML='<div class="empty">No applications in this view.</div>';return}
   el.innerHTML=rows.map(x=>`
@@ -100,7 +79,49 @@ function renderList(){
         ${x.posted_at?'<span class="pill">Posted '+new Date(x.posted_at).toLocaleDateString()+'</span>':''}
       </div>
       <div class="reason">${esc(x.reason||'')}</div>
+      ${(x.unknown_required||[]).length?'<div class="unknown">Blocked by: '+esc(x.unknown_required.join(' · '))+'</div>':''}
     </div>`).join('');
+}
+function categoryLabel(c){return c==='sensitive'?'Sensitive':c==='legal_or_consent'?'Legal / consent':c==='technical'?'Technical':c==='location'?'Location':'General'}
+function renderQuestions(){
+  const rows=questionData.questions||[];
+  document.getElementById('questionSummary').textContent=rows.length+' unresolved question'+(rows.length===1?'':'s')+' found in blocked applications.';
+  const el=document.getElementById('questions');
+  if(!rows.length){el.innerHTML='<div class="empty">No unanswered blocked questions right now.</div>';return}
+  el.innerHTML=rows.map((x,i)=>`
+    <div class="question">
+      <div class="qtop">
+        <div><div class="title">${esc(x.question)}</div><div class="company">${esc(x.company)} · ${esc(x.sample_title||'')}</div></div>
+        <span class="pill ${x.category==='sensitive'?'sensitive':x.category==='legal_or_consent'?'legal':''}">${categoryLabel(x.category)} · seen ${x.count}×</span>
+      </div>
+      <div class="answerrow">
+        <input id="answer-${i}" placeholder="${x.category==='sensitive'?'Enter only if you choose to disclose':'Your answer'}">
+        <button onclick="saveAnswer(${i})">Save & retry</button>
+      </div>
+      <div class="saveState" id="saved-${i}"></div>
+    </div>`).join('');
+}
+async function saveAnswer(i){
+  const x=(questionData.questions||[])[i];
+  const input=document.getElementById('answer-'+i);
+  const raw=input.value.trim();
+  if(!raw)return;
+  const answer=raw.includes('|')?raw.split('|').map(v=>v.trim()).filter(Boolean):raw;
+  const state=document.getElementById('saved-'+i);
+  state.textContent='Saving…';
+  try{
+    const r=await fetch('/answers?token='+encodeURIComponent(token),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({company:x.company,question:x.question,answer,scope:'company'})});
+    if(!r.ok)throw new Error('Could not save answer');
+    state.textContent='Saved. Retry scheduled for the next worker cycle.';
+    setTimeout(loadQuestions,1500);
+  }catch(e){state.textContent=e.message}
+}
+async function loadQuestions(){
+  if(!token)return;
+  try{
+    questionData=await fetch('/questions?token='+encodeURIComponent(token)).then(r=>{if(!r.ok)throw new Error('Could not load questions');return r.json()});
+    renderQuestions();
+  }catch(e){document.getElementById('questions').innerHTML='<div class="empty">'+esc(e.message)+'</div>'}
 }
 async function load(){
   if(!token){document.getElementById('status').textContent='Missing access token';return}
@@ -111,10 +132,11 @@ async function load(){
     ]);
     data=a;
     groups.forEach(g=>document.getElementById(g+'N').textContent=(a.counts&&a.counts[g])||0);
-    document.getElementById('status').textContent=h.auto_submit?'Auto-apply ON · 60s':'Auto-apply OFF';
+    document.getElementById('status').textContent=h.auto_submit?'Auto-apply ON · checks every minute':'Auto-apply OFF';
     document.getElementById('updated').textContent='Last refreshed '+new Date().toLocaleTimeString();
     renderTabs();renderList();
   }catch(e){document.getElementById('status').textContent='Dashboard unavailable';document.getElementById('list').innerHTML='<div class="empty">'+esc(e.message)+'</div>'}
+  loadQuestions();
 }
 document.getElementById('search').addEventListener('input',renderList);
 document.getElementById('refresh').onclick=load;
