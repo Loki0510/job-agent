@@ -26,6 +26,8 @@ _NON_US = (
     "france","spain","poland","romania","serbia","ukraine","israel","brazil","argentina",
 )
 _AI_OVERLEVEL = ("principal","staff","director","vice president","vp ","head of","architect","manager")
+_NON_US_WORK_RIGHTS = ("australian working rights","right to work in australia","australia working rights","uk working rights","right to work in the uk")
+
 _HARD_UNKNOWN = (
     "u.s. citizenship required","us citizenship required","u.s. citizen required",
     "active secret clearance required","active top secret clearance required",
@@ -71,6 +73,8 @@ def decide(profile, match, title, location, description, salary_min, salary_max,
     body=_norm(description)
     if not _us_eligible(location,description):
         return PolicyDecision("skip","job is not clearly U.S.-based",resume)
+    if any(term in body for term in _NON_US_WORK_RIGHTS):
+        return PolicyDecision("skip","job requires non-U.S. work rights",resume)
     if any(term in body for term in _HARD_UNKNOWN):
         return PolicyDecision("skip","citizenship or security-clearance requirement is not configured",resume)
     required_years=_required_years(description)
