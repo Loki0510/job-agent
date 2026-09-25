@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Header, HTTPException
 from app.core.config import settings
 from app.core.profile import PROFILE
-from app.services.discovery import discover_configured, records
+from app.services.discovery import discover_configured, records, stats
 from app.services.application_log import add as add_application, entries as application_entries
 
 async def _poller():
@@ -58,6 +58,10 @@ async def discover_now():
 async def jobs():
     data=records()
     return {"count":len(data),"jobs":data}
+
+@app.get("/stats")
+async def discovery_stats():
+    return stats()
 
 @app.post("/applications/report")
 async def application_report(payload: dict, x_report_token: str|None=Header(default=None)):
