@@ -33,7 +33,7 @@ def read_history(limit=1000):
 def terminal_ids():
     result=set()
     for item in read_history(10000):
-        if item.get("status") in {"submitted","manual_required"}:
+        if item.get("status") in {"submitted","manual_required","submit_unconfirmed"}:
             external_id=item.get("external_id")
             if external_id:
                 result.add(external_id)
