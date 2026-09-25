@@ -8,6 +8,7 @@ class Applicant:
     email: str
     phone: str
     linkedin: str
+    current_company: str
 
     @property
     def first_name(self):
@@ -23,6 +24,7 @@ APPLICANT=Applicant(
     email=os.getenv("CANDIDATE_EMAIL",""),
     phone=os.getenv("CANDIDATE_PHONE",""),
     linkedin=os.getenv("CANDIDATE_LINKEDIN",""),
+    current_company=os.getenv("CANDIDATE_CURRENT_COMPANY",""),
 )
 
 def norm(value):
@@ -44,12 +46,16 @@ def answer_for_label(label, company=""):
         return None
     if "authorized" in q and ("united states" in q or "u s" in q or "work" in q):
         return "Yes" if PROFILE.authorized_us else "No"
+    if "legally permitted" in q and "united states" in q:
+        return "Yes" if PROFILE.authorized_us else "No"
     if "sponsor" in q or "sponsorship" in q:
         return "Yes" if PROFILE.requires_sponsorship_now_or_future else "No"
     if "relocat" in q:
         return "Yes" if PROFILE.willing_to_relocate else "No"
-    if "previously worked" in q or "worked for" in q or "former employee" in q:
+    if "previously worked" in q or "worked for" in q or "former employee" in q or "currently or previously" in q:
         return "Yes" if worked_for_company(company) else "No"
     if "certify" in q and ("accurate" in q or "true" in q):
         return "Yes"
+    if "years" in q and "experience" in q:
+        return str(int(PROFILE.years_experience))
     return None
