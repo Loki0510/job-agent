@@ -1,3 +1,4 @@
+import asyncio
 import json
 from app.connectors.greenhouse import GreenhouseConnector
 from app.connectors.lever import LeverConnector
@@ -16,22 +17,40 @@ def _mapping(raw):
     except Exception:
         return {}
 
+async def _fetch_source(kind, site, company, semaphore):
+    async with semaphore:
+        try:
+            if kind=="greenhouse":
+                jobs=await GreenhouseConnector(site,company).discover()
+            else:
+                jobs=await LeverConnector(site,company).discover()
+            return {"jobs":jobs,"error":None}
+        except Exception as exc:
+            return {
+                "jobs":[],
+                "error":{"source":kind,"site":site,"company":company,"error":str(exc)}
+            }
+
 async def discover_configured():
+    greenhouse=_mapping(settings.greenhouse_boards_json)
+    lever=_mapping(settings.lever_sites_json)
+    semaphore=asyncio.Semaphore(8)
+    tasks=[]
+    for token,company in greenhouse.items():
+        tasks.append(_fetch_source("greenhouse",token,company,semaphore))
+    for site,company in lever.items():
+        tasks.append(_fetch_source("lever",site,company,semaphore))
+
+    results=await asyncio.gather(*tasks)
     discovered=[]
     source_errors=[]
-    for token, company in _mapping(settings.greenhouse_boards_json).items():
-        try:
-            discovered.extend(await GreenhouseConnector(token,company).discover())
-        except Exception as exc:
-            source_errors.append({"source":"greenhouse","site":token,"company":company,"error":str(exc)})
-    for site, company in _mapping(settings.lever_sites_json).items():
-        try:
-            discovered.extend(await LeverConnector(site,company).discover())
-        except Exception as exc:
-            source_errors.append({"source":"lever","site":site,"company":company,"error":str(exc)})
+    for result in results:
+        discovered.extend(result["jobs"])
+        if result["error"]:
+            source_errors.append(result["error"])
 
     if source_errors:
-        print(json.dumps({"source_errors":source_errors},ensure_ascii=False))
+        print(json.dumps({"source_errors":source_errors},ensure_ascii=False),flush=True)
 
     new=[]
     for job in discovered:
@@ -61,6 +80,7 @@ async def discover_configured():
         }
         _records.append(record)
         new.append(record)
+
     apply_count=sum(1 for r in _records if r.get("action")=="apply")
     skip_count=sum(1 for r in _records if r.get("action")=="skip")
     print(json.dumps({
@@ -69,9 +89,10 @@ async def discover_configured():
             "stored":len(_records),
             "apply":apply_count,
             "skip":skip_count,
-            "sources":len(_mapping(settings.greenhouse_boards_json))+len(_mapping(settings.lever_sites_json))
+            "sources":len(greenhouse)+len(lever),
+            "source_errors":len(source_errors)
         }
-    },ensure_ascii=False))
+    },ensure_ascii=False),flush=True)
     return new
 
 def records():
