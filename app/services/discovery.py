@@ -18,10 +18,20 @@ def _mapping(raw):
 
 async def discover_configured():
     discovered=[]
+    source_errors=[]
     for token, company in _mapping(settings.greenhouse_boards_json).items():
-        discovered.extend(await GreenhouseConnector(token,company).discover())
+        try:
+            discovered.extend(await GreenhouseConnector(token,company).discover())
+        except Exception as exc:
+            source_errors.append({"source":"greenhouse","site":token,"company":company,"error":str(exc)})
     for site, company in _mapping(settings.lever_sites_json).items():
-        discovered.extend(await LeverConnector(site,company).discover())
+        try:
+            discovered.extend(await LeverConnector(site,company).discover())
+        except Exception as exc:
+            source_errors.append({"source":"lever","site":site,"company":company,"error":str(exc)})
+
+    if source_errors:
+        print(json.dumps({"source_errors":source_errors},ensure_ascii=False))
 
     new=[]
     for job in discovered:
@@ -29,7 +39,10 @@ async def discover_configured():
             continue
         _seen.add(job.external_id)
         match=match_job(PROFILE,job.title,job.description)
-        decision=decide(PROFILE,match,job.salary_min,job.salary_max,settings.min_fit_score)
+        decision=decide(
+            PROFILE,match,job.title,job.location,job.description,
+            job.salary_min,job.salary_max,settings.min_fit_score
+        )
         record={
             "external_id":job.external_id,
             "source":job.source,
