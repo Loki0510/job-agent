@@ -45,8 +45,10 @@ def _us_eligible(location,description):
         return True
     if any(state in loc for state in _US_STATES):
         return True
-    if any(marker in body for marker in _US_MARKERS):
-        return True
+    if loc in {"remote","remote only","fully remote","remote position"}:
+        return any(marker in body for marker in _US_MARKERS)
+    if not loc:
+        return any(marker in body for marker in _US_MARKERS)
     return False
 
 def _requires_unknown_clearance_or_citizenship(description):
