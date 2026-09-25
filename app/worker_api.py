@@ -7,6 +7,7 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse
 from app.worker import main as worker_main, reset_retry_cache
 from app.worker_state import categorized, read_history, baseline_ids, unresolved_questions
+from app.status_view import latest_categorized
 from app.learned_answers import set_answer, all_answers
 
 RESUME_DIR=pathlib.Path(os.getenv("RESUME_DIR","/data/resumes"))
@@ -42,7 +43,7 @@ async def health():
 @app.get("/applications")
 async def applications(token: str):
     _check(token)
-    groups=categorized()
+    groups=latest_categorized()
     return {"counts":{key:len(value) for key,value in groups.items()},**groups}
 
 @app.get("/history")
