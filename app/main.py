@@ -1,9 +1,11 @@
 import asyncio
+import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, HTTPException
 from app.core.config import settings
 from app.core.profile import PROFILE
 from app.services.discovery import discover_configured, records
+from app.services.application_log import add as add_application, entries as application_entries
 
 async def _poller():
     while True:
@@ -23,7 +25,7 @@ async def lifespan(app: FastAPI):
     except asyncio.CancelledError:
         pass
 
-app=FastAPI(title="Autonomous Job Agent",version="0.4",lifespan=lifespan)
+app=FastAPI(title="Autonomous Job Agent",version="0.5",lifespan=lifespan)
 
 @app.get("/health")
 async def health():
@@ -56,3 +58,15 @@ async def discover_now():
 async def jobs():
     data=records()
     return {"count":len(data),"jobs":data}
+
+@app.post("/applications/report")
+async def application_report(payload: dict, x_report_token: str|None=Header(default=None)):
+    expected=os.getenv("REPORT_TOKEN","")
+    if expected and x_report_token!=expected:
+        raise HTTPException(status_code=401,detail="invalid report token")
+    return add_application(payload)
+
+@app.get("/applications")
+async def applications():
+    data=application_entries()
+    return {"count":len(data),"applications":data}
