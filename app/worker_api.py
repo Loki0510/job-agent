@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse
 from app.worker import main as worker_main
+from app.worker_state import categorized, read_history, baseline_ids
 
 RESUME_DIR=pathlib.Path(os.getenv("RESUME_DIR","/data/resumes"))
 SETUP_TOKEN=os.getenv("SETUP_TOKEN","")
@@ -34,7 +35,21 @@ async def health():
         "java_resume":(RESUME_DIR/"resume_java.docx").exists(),
         "ai_resume":(RESUME_DIR/"resume_ai.docx").exists(),
         "auto_submit":os.getenv("AUTO_SUBMIT","false").lower()=="true",
+        "baseline_jobs":len(baseline_ids()),
     }
+
+@app.get("/applications")
+async def applications(token: str):
+    _check(token)
+    groups=categorized()
+    return {"counts":{key:len(value) for key,value in groups.items()},**groups}
+
+@app.get("/history")
+async def history(token: str, limit: int=250):
+    _check(token)
+    limit=max(1,min(limit,1000))
+    rows=read_history(limit)
+    return {"count":len(rows),"history":rows}
 
 @app.get("/setup",response_class=HTMLResponse)
 async def setup(token: str):
