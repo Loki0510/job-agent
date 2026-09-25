@@ -6,7 +6,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse
 from app.worker import main as worker_main
-from app.worker_state import categorized, read_history, baseline_ids
+from app.worker_state import categorized, read_history, baseline_ids, unresolved_questions
+from app.learned_answers import set_answer, all_answers
 
 RESUME_DIR=pathlib.Path(os.getenv("RESUME_DIR","/data/resumes"))
 SETUP_TOKEN=os.getenv("SETUP_TOKEN","")
@@ -50,6 +51,26 @@ async def history(token: str, limit: int=250):
     limit=max(1,min(limit,1000))
     rows=read_history(limit)
     return {"count":len(rows),"history":rows}
+
+@app.get("/questions")
+async def questions(token: str):
+    _check(token)
+    rows=unresolved_questions()
+    return {"count":len(rows),"questions":rows,"learned_answers":all_answers()}
+
+@app.post("/answers")
+async def answers(payload: dict, token: str):
+    _check(token)
+    question=str(payload.get("question") or "").strip()
+    company=str(payload.get("company") or "").strip()
+    answer=payload.get("answer")
+    scope=str(payload.get("scope") or "company")
+    if not question or answer is None or answer=="":
+        raise HTTPException(status_code=400,detail="question and answer are required")
+    if scope not in {"company","global"}:
+        raise HTTPException(status_code=400,detail="scope must be company or global")
+    saved=set_answer(question,answer,company=company,scope=scope)
+    return {"saved":True,"answer":saved}
 
 @app.get("/setup",response_class=HTMLResponse)
 async def setup(token: str):
