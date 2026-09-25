@@ -12,6 +12,7 @@ class Applicant:
     city: str
     state: str
     postal_code: str
+    timezone: str
 
     @property
     def first_name(self):
@@ -35,6 +36,7 @@ APPLICANT=Applicant(
     city=os.getenv("CANDIDATE_CITY",""),
     state=os.getenv("CANDIDATE_STATE",""),
     postal_code=os.getenv("CANDIDATE_ZIP",""),
+    timezone=os.getenv("CANDIDATE_TIMEZONE",""),
 )
 
 def norm(value):
@@ -62,6 +64,10 @@ def answer_for_label(label, company=""):
         return "Yes" if PROFILE.requires_sponsorship_now_or_future else "No"
     if "relocat" in q:
         return "Yes" if PROFILE.willing_to_relocate else "No"
+    if ("5 day" in q or "five day" in q) and ("office" in q or "onsite" in q or "on site" in q):
+        return "Yes" if PROFILE.onsite_ok and PROFILE.willing_to_relocate else "No"
+    if ("est time zone" in q or "eastern time" in q) and APPLICANT.timezone in {"America/New_York","US/Eastern"}:
+        return "Yes"
     if "previously worked" in q or "worked for" in q or "former employee" in q or "currently or previously" in q:
         return "Yes" if worked_for_company(company) else "No"
     if "certify" in q and ("accurate" in q or "true" in q):
