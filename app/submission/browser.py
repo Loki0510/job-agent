@@ -19,7 +19,9 @@ async def _field_context(locator):
         if field_id:
             label=locator.page.locator(f'label[for="{field_id}"]')
             if await label.count():
-                return (await label.first.inner_text()).strip()
+                text=(await label.first.inner_text()).strip()
+                if text:
+                    return text
     except Exception:
         pass
     parts=[]
@@ -30,6 +32,27 @@ async def _field_context(locator):
         except Exception:
             pass
     return " ".join(parts)
+
+async def _question_context(locator):
+    try:
+        fieldset=locator.locator("xpath=ancestor::fieldset[1]")
+        if await fieldset.count():
+            legend=fieldset.locator("legend")
+            if await legend.count():
+                text=(await legend.first.inner_text()).strip()
+                if text:
+                    return text
+    except Exception:
+        pass
+    try:
+        parent=locator.locator("xpath=ancestor::*[self::div or self::li][1]")
+        if await parent.count():
+            text=(await parent.first.inner_text()).strip()
+            if text and len(text)<600:
+                return text
+    except Exception:
+        pass
+    return await _field_context(locator)
 
 async def _fill_text(input_el, context):
     q=_norm(context)
@@ -46,9 +69,65 @@ async def _fill_text(input_el, context):
         value=APPLICANT.phone
     elif "linkedin" in q:
         value=APPLICANT.linkedin
+    elif "current company" in q and APPLICANT.current_company:
+        value=APPLICANT.current_company
+    else:
+        value=answer_for_label(context)
     if value:
-        await input_el.fill(value)
+        await input_el.fill(str(value))
         return True
+    return False
+
+async def _captcha_present(page):
+    body=_norm(await page.locator("body").inner_text())
+    if any(x in body for x in ("verify you are human","security check","hcaptcha")):
+        return True
+    for selector in ('iframe[src*="recaptcha"]','iframe[src*="hcaptcha"]','[class*="captcha"]'):
+        if await page.locator(selector).count():
+            return True
+    return False
+
+async def _select_known_choice(el, context, answer):
+    if answer is None:
+        return False
+    typ=(await el.get_attribute("type") or "").lower()
+    if typ=="radio":
+        name=await el.get_attribute("name")
+        page=el.page
+        group=page.locator(f'input[type="radio"][name="{name}"]') if name else el
+        for i in range(await group.count()):
+            option=group.nth(i)
+            option_text=_norm(await _field_context(option))
+            value=_norm(await option.get_attribute("value") or "")
+            if _norm(answer) in {option_text,value}:
+                await option.check()
+                return True
+        return False
+    if typ=="checkbox":
+        label=_norm(await _field_context(el))
+        if _norm(answer) in {"yes","true"} and ("yes" in label or not label):
+            await el.check()
+            return True
+        return False
+    tag=await el.evaluate("(e)=>e.tagName.toLowerCase()")
+    if tag=="select":
+        options=await el.locator("option").all_text_contents()
+        target=next((x for x in options if _norm(x)==_norm(answer)),None)
+        if target:
+            await el.select_option(label=target)
+            return True
+        if str(answer).isdigit():
+            years=int(answer)
+            for x in options:
+                m=re.search(r"(\d+)\s*[-–]\s*(\d+)",x)
+                if m and int(m.group(1))<=years<=int(m.group(2)):
+                    await el.select_option(label=x)
+                    return True
+                m=re.search(r"(\d+)\+",x)
+                if m and years>=int(m.group(1)):
+                    await el.select_option(label=x)
+                    return True
+        return False
     return False
 
 async def inspect_and_fill(job, dry_run=True):
@@ -65,13 +144,9 @@ async def inspect_and_fill(job, dry_run=True):
         page=await browser.new_page()
         try:
             await page.goto(url,wait_until="domcontentloaded",timeout=45000)
-            body=_norm(await page.locator("body").inner_text())
-            if any(x in body for x in ("captcha","verify you are human","security check")):
+            captcha=await _captcha_present(page)
+            if captcha and not dry_run:
                 return {"status":"blocked","reason":"captcha or human verification detected","unknown_required":[]}
-
-            for selector in ('iframe[src*="recaptcha"]','iframe[src*="hcaptcha"]','[class*="captcha"]'):
-                if await page.locator(selector).count():
-                    return {"status":"blocked","reason":"captcha detected","unknown_required":[]}
 
             files=page.locator('input[type="file"]')
             if await files.count():
@@ -90,41 +165,56 @@ async def inspect_and_fill(job, dry_run=True):
 
             unknown=[]
             required=page.locator("input[required], textarea[required], select[required]")
+            seen_choice_groups=set()
             for i in range(await required.count()):
                 el=required.nth(i)
                 try:
                     if not await el.is_visible() or await el.is_disabled():
                         continue
                     typ=(await el.get_attribute("type") or "").lower()
-                    context=await _field_context(el)
+                    context=await _question_context(el)
                     answer=answer_for_label(context,job.get("company",""))
-                    if typ in ("radio","checkbox"):
-                        if answer is None:
+                    if typ=="radio":
+                        name=await el.get_attribute("name") or context
+                        if name in seen_choice_groups:
+                            continue
+                        seen_choice_groups.add(name)
+                        if not await _select_known_choice(el,context,answer):
                             unknown.append(context or "required choice")
+                        continue
+                    if typ=="checkbox":
+                        if not await el.is_checked() and not await _select_known_choice(el,context,answer):
+                            unknown.append(context or "required checkbox")
                         continue
                     tag=await el.evaluate("(e)=>e.tagName.toLowerCase()")
                     if tag=="select":
-                        if answer is None:
+                        value=await el.input_value()
+                        if not value and not await _select_known_choice(el,context,answer):
                             unknown.append(context or "required select")
-                        else:
-                            options=await el.locator("option").all_text_contents()
-                            target=next((x for x in options if _norm(x)==_norm(answer)),None)
-                            if target: await el.select_option(label=target)
-                            else: unknown.append(context or "required select")
                         continue
                     value=await el.input_value()
                     if not value and answer is not None:
-                        await el.fill(answer)
+                        await el.fill(str(answer))
                     elif not value:
                         unknown.append(context or "required field")
                 except Exception:
                     continue
 
             if unknown:
-                return {"status":"blocked","reason":"unknown required questions","unknown_required":sorted(set(unknown))[:20]}
+                return {
+                    "status":"blocked",
+                    "reason":"unknown required questions",
+                    "unknown_required":sorted(set(unknown))[:20],
+                    "captcha_detected":captcha,
+                }
 
             if dry_run:
-                return {"status":"ready","reason":"form filled; submit intentionally skipped","unknown_required":[]}
+                return {
+                    "status":"ready",
+                    "reason":"form filled; submit intentionally skipped",
+                    "unknown_required":[],
+                    "captcha_detected":captcha,
+                }
 
             buttons=page.get_by_role("button")
             for text in ("Submit application","Submit Application","Apply","Submit"):
@@ -132,6 +222,9 @@ async def inspect_and_fill(job, dry_run=True):
                 if await btn.count():
                     await btn.first.click()
                     await page.wait_for_timeout(1500)
+                    post_captcha=await _captcha_present(page)
+                    if post_captcha:
+                        return {"status":"blocked","reason":"captcha or human verification detected at submit","unknown_required":[]}
                     return {"status":"submitted","reason":"submit clicked","unknown_required":[]}
             return {"status":"blocked","reason":"submit button not found","unknown_required":[]}
         finally:
