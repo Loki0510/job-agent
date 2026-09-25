@@ -72,6 +72,8 @@ async def discover_configured():
             "salary_min":job.salary_min,
             "salary_max":job.salary_max,
             "remote":job.remote,
+            "posted_at":job.posted_at,
+            "posted_ts":job.posted_ts,
             "fit_score":match.score,
             "matched_skills":match.matched_skills,
             "action":decision.action,
@@ -100,7 +102,8 @@ def records():
 
 def eligible_records(limit=500):
     eligible=[x for x in _records if x.get("action")=="apply"]
-    return list(reversed(eligible[-limit:]))
+    eligible.sort(key=lambda x:(float(x.get("posted_ts") or 0),float(x.get("fit_score") or 0)),reverse=True)
+    return eligible[:limit]
 
 def stats():
     reasons={}
