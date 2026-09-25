@@ -1,6 +1,14 @@
+from datetime import datetime, timezone
 import httpx
 from app.connectors.base import DiscoveredJob
 from app.services.salary import annualize_salary
+
+def _created(value):
+    try:
+        ts=float(value)/1000.0
+        return datetime.fromtimestamp(ts,tz=timezone.utc).isoformat(),ts
+    except Exception:
+        return None,0.0
 
 class LeverConnector:
     def __init__(self, site, company, timeout=20.0):
@@ -20,6 +28,7 @@ class LeverConnector:
             categories=raw.get("categories") or {}
             location=(categories.get("location") or "").strip()
             salary=raw.get("salaryRange") or {}
+            posted_at,posted_ts=_created(raw.get("createdAt"))
             jobs.append(DiscoveredJob(
                 external_id=f"lever:{self.site}:{raw.get('id')}",
                 source="lever",
@@ -31,5 +40,7 @@ class LeverConnector:
                 salary_min=annualize_salary(salary.get("min"),salary.get("interval")),
                 salary_max=annualize_salary(salary.get("max"),salary.get("interval")),
                 remote=((raw.get("workplaceType") or "").lower()=="remote" or "remote" in location.lower()),
+                posted_at=posted_at,
+                posted_ts=posted_ts,
             ))
         return jobs
