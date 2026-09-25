@@ -120,6 +120,8 @@ async def _captcha_present(page):
 async def _select_known_choice(el, context, answer):
     if answer is None:
         return False
+    answers=answer if isinstance(answer,list) else [answer]
+    answers=[_norm(str(x)) for x in answers if str(x).strip()]
     typ=(await el.get_attribute("type") or "").lower()
     if typ=="radio":
         name=await el.get_attribute("name")
@@ -129,25 +131,29 @@ async def _select_known_choice(el, context, answer):
             option=group.nth(i)
             option_text=_norm(await _field_context(option))
             value=_norm(await option.get_attribute("value") or "")
-            if _norm(answer) in {option_text,value}:
+            if any(a in {option_text,value} for a in answers):
                 await option.check()
                 return True
         return False
     if typ=="checkbox":
         label=_norm(await _field_context(el))
-        if _norm(answer) in {"yes","true"} and ("yes" in label or not label):
+        if any(a in {"yes","true"} for a in answers) and ("yes" in label or not label):
+            await el.check()
+            return True
+        if any(a and (a==label or a in label or label in a) for a in answers):
             await el.check()
             return True
         return False
     tag=await el.evaluate("(e)=>e.tagName.toLowerCase()")
     if tag=="select":
         options=await el.locator("option").all_text_contents()
-        target=next((x for x in options if _norm(x)==_norm(answer)),None)
+        target=next((x for x in options if _norm(x) in answers),None)
         if target:
             await el.select_option(label=target)
             return True
-        if str(answer).isdigit():
-            years=int(answer)
+        scalar=str(answer[0] if isinstance(answer,list) and answer else answer)
+        if scalar.isdigit():
+            years=int(scalar)
             for x in options:
                 m=re.search(r"(\d+)\s*[-–]\s*(\d+)",x)
                 if m and int(m.group(1))<=years<=int(m.group(2)):
