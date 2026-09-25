@@ -5,7 +5,7 @@ import pathlib
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse
-from app.worker import main as worker_main
+from app.worker import main as worker_main, reset_retry_cache
 from app.worker_state import categorized, read_history, baseline_ids, unresolved_questions
 from app.learned_answers import set_answer, all_answers
 
@@ -70,7 +70,8 @@ async def answers(payload: dict, token: str):
     if scope not in {"company","global"}:
         raise HTTPException(status_code=400,detail="scope must be company or global")
     saved=set_answer(question,answer,company=company,scope=scope)
-    return {"saved":True,"answer":saved}
+    reset_retry_cache()
+    return {"saved":True,"answer":saved,"retry_scheduled":True}
 
 @app.get("/setup",response_class=HTMLResponse)
 async def setup(token: str):
