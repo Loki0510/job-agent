@@ -77,6 +77,10 @@ async def discover_configured():
 def records():
     return list(reversed(_records[-1000:]))
 
+def eligible_records(limit=500):
+    eligible=[x for x in _records if x.get("action")=="apply"]
+    return list(reversed(eligible[-limit:]))
+
 def stats():
     reasons={}
     sources={}
