@@ -61,7 +61,34 @@ async def discover_configured():
         }
         _records.append(record)
         new.append(record)
+    apply_count=sum(1 for r in _records if r.get("action")=="apply")
+    skip_count=sum(1 for r in _records if r.get("action")=="skip")
+    print(json.dumps({
+        "discovery_summary":{
+            "new":len(new),
+            "stored":len(_records),
+            "apply":apply_count,
+            "skip":skip_count,
+            "sources":len(_mapping(settings.greenhouse_boards_json))+len(_mapping(settings.lever_sites_json))
+        }
+    },ensure_ascii=False))
     return new
 
 def records():
     return list(reversed(_records[-1000:]))
+
+def stats():
+    reasons={}
+    sources={}
+    for item in _records:
+        sources[item["source"]]=sources.get(item["source"],0)+1
+        if item.get("action")=="skip":
+            reason=item.get("reason") or "unknown"
+            reasons[reason]=reasons.get(reason,0)+1
+    return {
+        "stored":len(_records),
+        "apply":sum(1 for x in _records if x.get("action")=="apply"),
+        "skip":sum(1 for x in _records if x.get("action")=="skip"),
+        "skip_reasons":reasons,
+        "sources":sources,
+    }
