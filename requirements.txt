@@ -5,3 +5,4 @@ sqlalchemy==2.0.36
 pydantic==2.9.2
 pydantic-settings==2.6.1
 playwright==1.48.0
+python-multipart==0.0.20
