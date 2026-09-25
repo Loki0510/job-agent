@@ -5,6 +5,15 @@ from app.services.applicant import APPLICANT, answer_for_label
 from app.services.resumes import resume_for
 
 SUPPORTED_HOSTS=("greenhouse.io","lever.co","jobs.lever.co")
+_CONFIRMATION_PHRASES=(
+    "thank you for applying",
+    "thanks for applying",
+    "application submitted",
+    "your application has been submitted",
+    "we have received your application",
+    "we've received your application",
+    "application received",
+)
 
 def _norm(value):
     return re.sub(r"\s+"," ",(value or "").strip().lower())
@@ -81,6 +90,14 @@ async def _fill_text(input_el, context):
         value=APPLICANT.linkedin
     elif ("current company" in q or q in {"org","organization","company"}) and APPLICANT.current_company:
         value=APPLICANT.current_company
+    elif "city" in q and APPLICANT.city:
+        value=APPLICANT.city
+    elif "state" in q and APPLICANT.state:
+        value=APPLICANT.state
+    elif ("zip" in q or "postal" in q) and APPLICANT.postal_code:
+        value=APPLICANT.postal_code
+    elif "location" in q and APPLICANT.location_text:
+        value=APPLICANT.location_text
     else:
         value=answer_for_label(context)
     if value:
@@ -156,7 +173,7 @@ async def inspect_and_fill(job, dry_run=True):
             await page.goto(url,wait_until="domcontentloaded",timeout=45000)
             captcha=await _captcha_present(page)
             if captcha and not dry_run:
-                return {"status":"blocked","reason":"captcha or human verification detected","unknown_required":[]}
+                return {"status":"manual_required","reason":"captcha or human verification detected","unknown_required":[],"captcha_detected":True}
 
             files=page.locator('input[type="file"]')
             if await files.count():
@@ -233,12 +250,20 @@ async def inspect_and_fill(job, dry_run=True):
             for text in ("Submit application","Submit Application","Apply","Submit"):
                 btn=buttons.get_by_text(text,exact=False)
                 if await btn.count():
+                    before_url=page.url
                     await btn.first.click()
-                    await page.wait_for_timeout(1500)
-                    post_captcha=await _captcha_present(page)
-                    if post_captcha:
-                        return {"status":"blocked","reason":"captcha or human verification detected at submit","unknown_required":[]}
-                    return {"status":"submitted","reason":"submit clicked","unknown_required":[]}
+                    try:
+                        await page.wait_for_load_state("domcontentloaded",timeout=10000)
+                    except Exception:
+                        await page.wait_for_timeout(2500)
+                    if await _captcha_present(page):
+                        return {"status":"manual_required","reason":"captcha or human verification detected at submit","unknown_required":[],"captcha_detected":True}
+                    body=_norm(await page.locator("body").inner_text())
+                    confirmed=any(phrase in body for phrase in _CONFIRMATION_PHRASES)
+                    url_changed=page.url!=before_url and any(x in _norm(page.url) for x in ("thank","confirm","submitted","success"))
+                    if confirmed or url_changed:
+                        return {"status":"submitted","reason":"submission confirmation detected","unknown_required":[],"confirmation_url":page.url}
+                    return {"status":"submit_unconfirmed","reason":"submit clicked but no confirmation detected","unknown_required":[]}
             return {"status":"blocked","reason":"submit button not found","unknown_required":[]}
         finally:
             await browser.close()
