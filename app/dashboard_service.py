@@ -37,3 +37,24 @@ async def health():
             return {"status":"ok","auto_submit":bool(data.get("auto_submit"))}
         except Exception:
             return {"status":"degraded","auto_submit":False}
+
+
+@app.get("/questions")
+async def questions(token: str):
+    _check(token)
+    async with httpx.AsyncClient(timeout=20,follow_redirects=True) as client:
+        response=await client.get(f"{WORKER_API}/questions",params={"token":SETUP_TOKEN})
+        response.raise_for_status()
+        return response.json()
+
+@app.post("/answers")
+async def answers(payload: dict, token: str):
+    _check(token)
+    async with httpx.AsyncClient(timeout=20,follow_redirects=True) as client:
+        response=await client.post(
+            f"{WORKER_API}/answers",
+            params={"token":SETUP_TOKEN},
+            json=payload,
+        )
+        response.raise_for_status()
+        return response.json()
