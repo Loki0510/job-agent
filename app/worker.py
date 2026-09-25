@@ -35,10 +35,11 @@ async def cycle():
     async with httpx.AsyncClient(follow_redirects=True) as client:
         jobs=await fetch_queue(client)
 
-        if AUTO_SUBMIT and not has_baseline():
+        if not has_baseline():
             payload=save_baseline([j.get("external_id") for j in jobs if j.get("external_id")])
             log({"baseline":"created","count":len(payload.get("external_ids",[]))})
-            return
+            if AUTO_SUBMIT:
+                return
 
         completed=terminal_ids()
         baseline=baseline_ids() if AUTO_SUBMIT else set()
