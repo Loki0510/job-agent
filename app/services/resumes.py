@@ -1,5 +1,7 @@
 import base64, os, pathlib, tempfile
 
+PERSISTENT_DIR=pathlib.Path(os.getenv("RESUME_DIR","/data/resumes"))
+
 def _secret(name):
     direct=os.getenv(name,"").strip()
     if direct:
@@ -11,6 +13,11 @@ def _secret(name):
             break
         parts.append(value)
     return "".join(parts)
+
+def _persistent(profile_name):
+    filename="resume_ai.docx" if profile_name=="ai" else "resume_java.docx"
+    path=PERSISTENT_DIR/filename
+    return str(path) if path.exists() and path.stat().st_size>0 else None
 
 def _decode_var(name, filename):
     raw=_secret(name)
@@ -24,6 +31,9 @@ def _decode_var(name, filename):
     return str(path)
 
 def resume_for(profile_name):
+    stored=_persistent(profile_name)
+    if stored:
+        return stored
     if profile_name=="ai":
         return _decode_var("RESUME_AI_B64","resume_ai.docx")
     return _decode_var("RESUME_JAVA_B64","resume_java.docx")
