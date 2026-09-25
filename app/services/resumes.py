@@ -1,7 +1,19 @@
 import base64, os, pathlib, tempfile
 
+def _secret(name):
+    direct=os.getenv(name,"").strip()
+    if direct:
+        return direct
+    parts=[]
+    for i in range(1,20):
+        value=os.getenv(f"{name}_{i:02d}","").strip()
+        if not value:
+            break
+        parts.append(value)
+    return "".join(parts)
+
 def _decode_var(name, filename):
-    raw=os.getenv(name,"").strip()
+    raw=_secret(name)
     if not raw:
         return None
     root=pathlib.Path(tempfile.gettempdir())/"job-agent-resumes"
