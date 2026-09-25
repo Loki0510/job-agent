@@ -45,11 +45,21 @@ async def _question_context(locator):
     except Exception:
         pass
     try:
-        parent=locator.locator("xpath=ancestor::*[self::div or self::li][1]")
-        if await parent.count():
-            text=(await parent.first.inner_text()).strip()
-            if text and len(text)<600:
+        preceding=locator.locator("xpath=preceding::label[1]")
+        if await preceding.count():
+            text=(await preceding.first.inner_text()).strip()
+            if text and _norm(text) not in {"select","select...","yes","no"} and len(text)<600:
                 return text
+    except Exception:
+        pass
+    try:
+        for depth in range(1,5):
+            parent=locator.locator(f"xpath=ancestor::*[self::div or self::li][{depth}]")
+            if await parent.count():
+                text=(await parent.first.inner_text()).strip()
+                simple=_norm(text)
+                if text and simple not in {"select","select...","yes","no"} and len(text)<900:
+                    return text
     except Exception:
         pass
     return await _field_context(locator)
@@ -69,7 +79,7 @@ async def _fill_text(input_el, context):
         value=APPLICANT.phone
     elif "linkedin" in q:
         value=APPLICANT.linkedin
-    elif "current company" in q and APPLICANT.current_company:
+    elif ("current company" in q or q in {"org","organization","company"}) and APPLICANT.current_company:
         value=APPLICANT.current_company
     else:
         value=answer_for_label(context)
