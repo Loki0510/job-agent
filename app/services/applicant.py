@@ -9,6 +9,9 @@ class Applicant:
     phone: str
     linkedin: str
     current_company: str
+    city: str
+    state: str
+    postal_code: str
 
     @property
     def first_name(self):
@@ -19,12 +22,19 @@ class Applicant:
         parts=self.name.strip().split()
         return parts[-1] if len(parts)>1 else ""
 
+    @property
+    def location_text(self):
+        return ", ".join(x for x in (self.city,self.state) if x)
+
 APPLICANT=Applicant(
     name=os.getenv("CANDIDATE_NAME",""),
     email=os.getenv("CANDIDATE_EMAIL",""),
     phone=os.getenv("CANDIDATE_PHONE",""),
     linkedin=os.getenv("CANDIDATE_LINKEDIN",""),
     current_company=os.getenv("CANDIDATE_CURRENT_COMPANY",""),
+    city=os.getenv("CANDIDATE_CITY",""),
+    state=os.getenv("CANDIDATE_STATE",""),
+    postal_code=os.getenv("CANDIDATE_ZIP",""),
 )
 
 def norm(value):
