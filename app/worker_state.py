@@ -112,3 +112,35 @@ def unresolved_questions():
             elif any(term in low for term in ("office","location","metro","time zone","relocat")):
                 row["category"]="location"
     return sorted(groups.values(),key=lambda x:(-x["count"],x["company"],x["question"]))
+
+
+def prune_old_history(max_age_days=14):
+    if not HISTORY_PATH.exists():
+        return {"removed":0,"kept":0}
+    cutoff=datetime.now(timezone.utc).timestamp()-(max(int(max_age_days),1)*86400)
+    rows=[]
+    with HISTORY_PATH.open("r",encoding="utf-8") as handle:
+        for line in handle:
+            try:
+                rows.append(json.loads(line))
+            except Exception:
+                continue
+    kept=[]
+    removed=0
+    for item in rows:
+        if item.get("status")=="submitted":
+            kept.append(item)
+            continue
+        try:
+            posted_ts=float(item.get("posted_ts") or 0)
+        except Exception:
+            posted_ts=0
+        if posted_ts>0 and posted_ts>=cutoff:
+            kept.append(item)
+        else:
+            removed+=1
+    DATA_DIR.mkdir(parents=True,exist_ok=True)
+    with HISTORY_PATH.open("w",encoding="utf-8") as handle:
+        for item in kept:
+            handle.write(json.dumps(item,ensure_ascii=False)+"\n")
+    return {"removed":removed,"kept":len(kept)}
