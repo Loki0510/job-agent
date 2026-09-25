@@ -15,6 +15,9 @@ BATCH_SIZE=max(int(os.getenv("APPLICATION_BATCH_SIZE","8")),1)
 FORM_TIMEOUT=max(int(os.getenv("FORM_TIMEOUT_SECONDS","75")),30)
 _seen=set()
 
+def reset_retry_cache():
+    _seen.clear()
+
 def log(payload):
     print(json.dumps(payload,ensure_ascii=False),flush=True)
 
