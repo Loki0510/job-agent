@@ -78,3 +78,37 @@ def categorized():
         else:
             groups["blocked"].append(item)
     return groups
+
+
+def unresolved_questions():
+    groups={}
+    sensitive_terms=("gender","sexual orientation","transgender","ethnicity","disability","veteran","military")
+    legal_terms=("privacy policy","certify","consent","acknowledge","agree")
+    for item in read_history(10000):
+        if item.get("status")!="blocked":
+            continue
+        company=item.get("company") or ""
+        title=item.get("title") or ""
+        for question in item.get("unknown_required") or []:
+            q=str(question).strip()
+            if not q or q=="required field":
+                continue
+            key=(company.lower(),q.lower())
+            row=groups.setdefault(key,{
+                "company":company,
+                "question":q,
+                "count":0,
+                "sample_title":title,
+                "category":"general",
+            })
+            row["count"]+=1
+            low=q.lower()
+            if any(term in low for term in sensitive_terms):
+                row["category"]="sensitive"
+            elif any(term in low for term in legal_terms):
+                row["category"]="legal_or_consent"
+            elif any(term in low for term in ("experience","java","angular","aws","typescript","ci/cd","database","ai ","agentic","programming language")):
+                row["category"]="technical"
+            elif any(term in low for term in ("office","location","metro","time zone","relocat")):
+                row["category"]="location"
+    return sorted(groups.values(),key=lambda x:(-x["count"],x["company"],x["question"]))
