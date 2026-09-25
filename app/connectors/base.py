@@ -12,3 +12,5 @@ class DiscoveredJob:
     salary_min: int|None=None
     salary_max: int|None=None
     remote: bool=False
+    posted_at: str|None=None
+    posted_ts: float=0.0
