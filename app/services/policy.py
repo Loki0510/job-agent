@@ -7,10 +7,10 @@ class PolicyDecision:
     reason: str
     resume_profile: str
 
-_US_MARKERS = (
+_US_MARKERS=(
     "united states","usa","u.s.","u.s.a.","remote - us","remote us","us remote",
 )
-_US_STATES = (
+_US_STATES=(
     "alabama","alaska","arizona","arkansas","california","colorado","connecticut","delaware",
     "florida","georgia","hawaii","idaho","illinois","indiana","iowa","kansas","kentucky",
     "louisiana","maine","maryland","massachusetts","michigan","minnesota","mississippi",
@@ -19,25 +19,22 @@ _US_STATES = (
     "rhode island","south carolina","south dakota","tennessee","texas","utah","vermont",
     "virginia","washington","west virginia","wisconsin","wyoming","district of columbia",
 )
-_NON_US = (
+_NON_US=(
     "canada","ontario","quebec","mississauga","toronto","vancouver","montreal","calgary",
     "mexico","united kingdom","london","ireland","dublin","india","hyderabad","bengaluru",
     "bangalore","europe","emea","apac","australia","singapore","philippines","germany",
     "france","spain","poland","romania","serbia","ukraine","israel","brazil","argentina",
 )
-_AI_OVERLEVEL = ("principal","staff","director","vice president","vp ","head of","architect","manager")
-_NON_US_WORK_RIGHTS = ("australian working rights","right to work in australia","australia working rights","uk working rights","right to work in the uk")
-
-_HARD_UNKNOWN = (
-    "u.s. citizenship required","us citizenship required","u.s. citizen required",
-    "active secret clearance required","active top secret clearance required",
-    "active ts/sci","ts/sci required","security clearance required",
+_AI_OVERLEVEL=("principal","staff","director","vice president","vp ","head of","architect","manager")
+_NON_US_WORK_RIGHTS=(
+    "australian working rights","right to work in australia","australia working rights",
+    "uk working rights","right to work in the uk",
 )
 
 def _norm(value):
     return re.sub(r"\s+"," ",(value or "").lower()).strip()
 
-def _us_eligible(location, description):
+def _us_eligible(location,description):
     loc=_norm(location)
     body=_norm(description)
     if any(marker in loc for marker in _NON_US):
@@ -50,9 +47,22 @@ def _us_eligible(location, description):
         return True
     if any(marker in body for marker in _US_MARKERS):
         return True
-    if loc=="remote":
-        return False
     return False
+
+def _requires_unknown_clearance_or_citizenship(description):
+    body=_norm(description)
+    patterns=(
+        r"u\.s\. citizenship (?:is )?required",
+        r"us citizenship (?:is )?required",
+        r"requires? u\.s\. citizenship",
+        r"requires? us citizenship",
+        r"must be (?:a )?u\.s\. citizen",
+        r"must be (?:a )?us citizen",
+        r"active (?:final )?(?:dod )?(?:secret|top secret|ts/sci)[^.!]{0,40}(?:required|clearance)",
+        r"(?:secret|top secret|ts/sci) clearance (?:is )?required",
+        r"security clearance (?:is )?required",
+    )
+    return any(re.search(pattern,body) for pattern in patterns)
 
 def _required_years(description):
     body=_norm(description)
@@ -67,7 +77,7 @@ def _required_years(description):
         values.extend(int(x) for x in re.findall(pattern,body))
     return max(values) if values else None
 
-def decide(profile, match, title, location, description, salary_min, salary_max, min_fit_score):
+def decide(profile,match,title,location,description,salary_min,salary_max,min_fit_score):
     resume="ai" if match.ai_track else "java"
     title_norm=_norm(title)
     body=_norm(description)
@@ -75,7 +85,7 @@ def decide(profile, match, title, location, description, salary_min, salary_max,
         return PolicyDecision("skip","job is not clearly U.S.-based",resume)
     if any(term in body for term in _NON_US_WORK_RIGHTS):
         return PolicyDecision("skip","job requires non-U.S. work rights",resume)
-    if any(term in body for term in _HARD_UNKNOWN):
+    if _requires_unknown_clearance_or_citizenship(description):
         return PolicyDecision("skip","citizenship or security-clearance requirement is not configured",resume)
     required_years=_required_years(description)
     if required_years is not None and required_years > profile.years_experience + 1:
