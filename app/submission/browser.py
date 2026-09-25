@@ -3,6 +3,7 @@ from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 from app.services.applicant import APPLICANT, answer_for_label
 from app.services.resumes import resume_for
+from app.learned_answers import get_answer
 
 SUPPORTED_HOSTS=("greenhouse.io","lever.co","jobs.lever.co")
 _CONFIRMATION_PHRASES=(
@@ -100,6 +101,8 @@ async def _fill_text(input_el, context):
         value=APPLICANT.location_text
     else:
         value=answer_for_label(context)
+        if value is None:
+            value=get_answer(context,"")
     if value:
         await input_el.fill(str(value))
         return True
@@ -201,6 +204,8 @@ async def inspect_and_fill(job, dry_run=True):
                     typ=(await el.get_attribute("type") or "").lower()
                     context=await _question_context(el)
                     answer=answer_for_label(context,job.get("company",""))
+                    if answer is None:
+                        answer=get_answer(context,job.get("company",""))
                     if typ=="radio":
                         name=await el.get_attribute("name") or context
                         if name in seen_choice_groups:
